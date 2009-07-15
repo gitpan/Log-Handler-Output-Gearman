@@ -10,8 +10,8 @@ name 'Log-Handler-Output-Gearman';
 all_from 'lib/Log/Handler/Output/Gearman.pm';
 
 requires(
-    'Log::Handler' => '0.56',
-    'Gearman::XS'  => '0.3',
+    'Log::Handler' => '0.47',
+    'Gearman::XS'  => '0.2',
 );
 
 test_requires 'Test::More';

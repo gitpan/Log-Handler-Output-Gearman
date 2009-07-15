@@ -1,5 +1,6 @@
 Changes
 examples/app.pl
+examples/app2.pl
 examples/worker.pl
 inc/Module/AutoInstall.pm
 inc/Module/Install.pm

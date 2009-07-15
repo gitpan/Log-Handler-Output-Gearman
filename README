@@ -5,8 +5,8 @@ SYNOPSIS
         use Log::Handler::Output::Gearman;
 
         my $logger = Log::Handler::Output::Gearman->new(
-            host   => '127.0.0.1',
-            worker => 'logger',
+            servers => ['127.0.0.1:4731'],
+            worker  => 'logger',
         );
 
         my $message = 'This is a log message';
@@ -21,19 +21,21 @@ METHODS
   new
     Takes a number of arguments, following are mandatory:
 
-    *   host
+    *   servers
 
-            host => '127.0.0.1' # hostname / ip-address the B<gearmand> is running on
+            # hostname:port gearmand is running on
+            servers => [
+                '127.0.0.1:4731',
+                '192.168.0.1:4735',
+                '192.168.0.2'       # uses default port (4730)
+            ]
 
     *   worker
 
-            worker => 'logger' # name of the worker that should process the log messages
+            # name of the worker that should process the log messages
+            worker => 'logger'
 
     Besides it takes also following optional arguments:
-
-    *   port (default: 4730)
-
-            port => 4731 # port germand is listening to
 
     *   method (default: do_background)
 
@@ -48,28 +50,18 @@ METHODS
         * "do_high_background"
         * "do_low_background"
 
+    *   encode_message
+
+            # encode log message before it's being sent as workload to Gearman
+            encode_message => sub {
+                my ($message) = @_;
+                return JSON::XS::encode({ message => $message });
+            }
+
   log
-    Takes two arguments of which the second is optional:
+    Takes one argument:
 
     *   $message - The log message
-
-    *   $options - Options to override default behaviour per log message
-
-        By default every log message is added to Gearman using
-        "do_background". This default behaviour can be changed on
-        instantiation by setting "method =" '...'>. In case you need to send
-        single messages with higher priority you can override this per
-        message:
-
-            my $message = 'This is a HIGH PRIO log message';
-            my $options = { method => 'do_high_background' };
-            $logger->log( $message, $options );
-
-        It's also possible to send single messages to other workers:
-
-            my $message = 'This is a HIGH PRIO log message';
-            my $options = { method => 'do_high_background', worker => 'some_other_worker' };
-            $logger->log( $message, $options );
 
 AUTHOR
     Johannes Plunien <plu@cpan.org>

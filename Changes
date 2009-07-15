@@ -1,4 +1,12 @@
 Revision history for Log-Handler-Output-Gearman
 
+0.01000_02  Wed Jul 15 2009
+            - Fixed Log::Handler::add() integration (this implies removing per
+              message basis options)
+            - Changed host/port parameters to an arrayref containing 'host:port'
+              strings
+            - Added new hook 'encode_message' to encode a log message before
+              it's being sent to a Gearman worker
+
 0.01000_01  Tue Jul 14 2009
-            Initial developer release.
+            - Initial developer release.

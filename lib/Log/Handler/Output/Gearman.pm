@@ -2,12 +2,12 @@ package Log::Handler::Output::Gearman;
 
 use strict;
 use warnings;
-use Carp;
+use Carp::Clan qw(^Log::Handler);
 use Gearman::XS::Client;
 use Gearman::XS qw(:constants);
 use Params::Validate;
 
-our $VERSION = '0.01000_01';
+our $VERSION = '0.01000_02';
 
 =head1 NAME
 
@@ -18,8 +18,8 @@ Log::Handler::Output::Gearman - Send log messages to Gearman workers.
     use Log::Handler::Output::Gearman;
 
     my $logger = Log::Handler::Output::Gearman->new(
-        host   => '127.0.0.1',
-        worker => 'logger',
+        servers => ['127.0.0.1:4731'],
+        worker  => 'logger',
     );
 
     my $message = 'This is a log message';
@@ -40,27 +40,27 @@ Takes a number of arguments, following are B<mandatory>:
 
 =item *
 
-host
+servers
 
-    host => '127.0.0.1' # hostname / ip-address the B<gearmand> is running on
+    # hostname:port gearmand is running on
+    servers => [
+        '127.0.0.1:4731',
+        '192.168.0.1:4735',
+        '192.168.0.2'       # uses default port (4730)
+    ]
 
 =item *
 
 worker
 
-    worker => 'logger' # name of the worker that should process the log messages
+    # name of the worker that should process the log messages
+    worker => 'logger'
 
 =back
 
 Besides it takes also following B<optional> arguments:
 
 =over 4
-
-=item *
-
-port (default: 4730)
-
-    port => 4731 # port germand is listening to
 
 =item *
 
@@ -86,6 +86,16 @@ This can be one of the following L<Gearman::XS::Client> methods:
 
 =back
 
+=item *
+
+encode_message
+
+    # encode log message before it's being sent as workload to Gearman
+    encode_message => sub {
+        my ($message) = @_;
+        return JSON::XS::encode({ message => $message });
+    }
+
 =back
 
 =cut
@@ -96,14 +106,9 @@ sub new {
     my %options = Params::Validate::validate(
         @_,
         {
-            host => {
-                type     => Params::Validate::SCALAR,
+            servers => {
+                type     => Params::Validate::ARRAYREF,
                 optional => 0,
-            },
-            port => {
-                type    => Params::Validate::SCALAR,
-                regex   => qr/^\d+$/,
-                default => 4730,
             },
             worker => {
                 type     => Params::Validate::SCALAR,
@@ -113,6 +118,10 @@ sub new {
                 type    => Params::Validate::SCALAR,
                 regex   => qr/^(do|do_high|do_low|do_background|do_high_background|do_low_background)$/,
                 default => 'do_background',
+            },
+            encode_message => {
+                type     => Params::Validate::CODEREF,
+                optional => 1,
             },
         }
     );
@@ -126,7 +135,7 @@ sub new {
 
 =head2 log
 
-Takes two arguments of which the second is optional:
+Takes one argument:
 
 =over 4
 
@@ -134,39 +143,28 @@ Takes two arguments of which the second is optional:
 
 C<$message> - The log message
 
-=item *
-
-C<$options> - Options to override default behaviour per log message
-
-By default every log message is added to Gearman using C<do_background>. This default behaviour can be changed
-on instantiation by setting C<method => '...'>. In case you need to send single messages with higher
-priority you can override this per message:
-
-    my $message = 'This is a HIGH PRIO log message';
-    my $options = { method => 'do_high_background' };
-    $logger->log( $message, $options );
-
-It's also possible to send single messages to other workers:
-
-    my $message = 'This is a HIGH PRIO log message';
-    my $options = { method => 'do_high_background', worker => 'some_other_worker' };
-    $logger->log( $message, $options );
-
 =back
 
 =cut
 
 sub log {
-    my ( $self, $message, $options ) = @_;
+    my ( $self, $message ) = @_;
 
     return unless defined $message;
 
-    $options ||= {};
+    $message = $message->{message} if ref($message) eq 'HASH' and defined $message->{message};
 
-    my $method = $options->{method} || $self->{method};
-    my $worker = $options->{worker} || $self->{worker};
+    my $method  = $self->{method};
+    my $worker  = $self->{worker};
+    my $encoder = $self->{encode_message};
 
-    my ( $ret, $job_handle ) = $self->{client}->$method( $worker, $message );
+    my $workload = $message;
+
+    if ( ref($encoder) eq 'CODE' ) {
+        $workload = $encoder->($message);
+    }
+
+    my ( $ret, $job_handle ) = $self->{client}->$method( $worker, $workload );
     if ( $ret != GEARMAN_SUCCESS ) {
         croak( $self->{client}->error() );
     }
@@ -177,7 +175,7 @@ sub log {
 sub _setup_gearman {
     my ($self) = @_;
     my $client = Gearman::XS::Client->new;
-    my $ret = $client->add_server( $self->{host}, $self->{port} );
+    my $ret = $client->add_servers( join( ',', @{ $self->{servers} } ) );
     if ( $ret != GEARMAN_SUCCESS ) {
         croak( $client->error() );
     }
