@@ -1,5 +1,8 @@
 Revision history for Log-Handler-Output-Gearman
 
+0.01001     Wed Jul 15 2009
+            - Renamed 'encode_message' to 'prepare_message'
+
 0.01000_02  Wed Jul 15 2009
             - Fixed Log::Handler::add() integration (this implies removing per
               message basis options)

@@ -50,10 +50,10 @@ METHODS
         * "do_high_background"
         * "do_low_background"
 
-    *   encode_message
+    *   prepare_message
 
             # encode log message before it's being sent as workload to Gearman
-            encode_message => sub {
+            prepare_message => sub {
                 my ($message) = @_;
                 return JSON::XS::encode({ message => $message });
             }

@@ -7,7 +7,7 @@ use Gearman::XS::Client;
 use Gearman::XS qw(:constants);
 use Params::Validate;
 
-our $VERSION = '0.01000_02';
+our $VERSION = '0.01001';
 
 =head1 NAME
 
@@ -88,10 +88,10 @@ This can be one of the following L<Gearman::XS::Client> methods:
 
 =item *
 
-encode_message
+prepare_message
 
     # encode log message before it's being sent as workload to Gearman
-    encode_message => sub {
+    prepare_message => sub {
         my ($message) = @_;
         return JSON::XS::encode({ message => $message });
     }
@@ -119,7 +119,7 @@ sub new {
                 regex   => qr/^(do|do_high|do_low|do_background|do_high_background|do_low_background)$/,
                 default => 'do_background',
             },
-            encode_message => {
+            prepare_message => {
                 type     => Params::Validate::CODEREF,
                 optional => 1,
             },
@@ -156,12 +156,12 @@ sub log {
 
     my $method  = $self->{method};
     my $worker  = $self->{worker};
-    my $encoder = $self->{encode_message};
+    my $prepare = $self->{prepare_message};
 
     my $workload = $message;
 
-    if ( ref($encoder) eq 'CODE' ) {
-        $workload = $encoder->($message);
+    if ( ref($prepare) eq 'CODE' ) {
+        $workload = $prepare->($message);
     }
 
     my ( $ret, $job_handle ) = $self->{client}->$method( $worker, $workload );
