@@ -1,5 +1,8 @@
 Revision history for Log-Handler-Output-Gearman
 
+0.01002     Thu Jul 16 2009
+            - Adapt error handling of other Log::Handler::Output modules
+
 0.01001     Wed Jul 15 2009
             - Renamed 'encode_message' to 'prepare_message'
 

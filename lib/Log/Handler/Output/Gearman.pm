@@ -7,7 +7,8 @@ use Gearman::XS::Client;
 use Gearman::XS qw(:constants);
 use Params::Validate;
 
-our $VERSION = '0.01001';
+our $VERSION = '0.01002';
+our $ERRSTR  = '';
 
 =head1 NAME
 
@@ -166,11 +167,19 @@ sub log {
 
     my ( $ret, $job_handle ) = $self->{client}->$method( $worker, $workload );
     if ( $ret != GEARMAN_SUCCESS ) {
-        croak( $self->{client}->error() );
+        return $self->_raise_error( $self->{client}->error() );
     }
 
     return 1;
 }
+
+=head2 errstr
+
+Returns the last error message.
+
+=cut
+
+sub errstr { $ERRSTR }
 
 sub _setup_gearman {
     my ($self) = @_;
@@ -180,6 +189,12 @@ sub _setup_gearman {
         croak( $client->error() );
     }
     $self->{client} = $client;
+}
+
+sub _raise_error {
+    my $self = shift;
+    $ERRSTR = shift;
+    return undef;
 }
 
 =head1 AUTHOR

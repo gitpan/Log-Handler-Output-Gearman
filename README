@@ -63,6 +63,9 @@ METHODS
 
     *   $message - The log message
 
+  errstr
+    Returns the last error message.
+
 AUTHOR
     Johannes Plunien <plu@cpan.org>
 
