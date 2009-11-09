@@ -1,5 +1,11 @@
 Revision history for Log-Handler-Output-Gearman
 
+0.01003     Thu Nov 06 2009
+            - New method reload() (supported since Log::Handler 0.62)
+            - New method gearman_client(), returns Gearman::XS::Client instance
+            - Removed prepare_message option since this is supported by Log::Handler
+              itself already
+
 0.01002     Thu Jul 16 2009
             - Adapt error handling of other Log::Handler::Output modules
 

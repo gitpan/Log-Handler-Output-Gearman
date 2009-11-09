@@ -1,4 +1,4 @@
-use inc::Module::Install;
+use inc::Module::Install 0.91;
 
 if ( -e 'MANIFEST.SKIP' ) {
     system('pod2text lib/Log/Handler/Output/Gearman.pm > README');
@@ -10,11 +10,15 @@ name 'Log-Handler-Output-Gearman';
 all_from 'lib/Log/Handler/Output/Gearman.pm';
 
 requires(
-    'Log::Handler' => '0.47',
-    'Gearman::XS'  => '0.2',
+    'Log::Handler' => '0.62',
+    'Gearman::XS'  => '0.6',
+    'Carp::Clan'   => 0,
 );
 
-test_requires 'Test::More';
+test_requires(
+    'Test::More' => 0,
+    'File::Temp' => 0,
+);
 
 auto_install;
 WriteAll;

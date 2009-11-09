@@ -7,7 +7,7 @@ use Gearman::XS::Client;
 use Gearman::XS qw(:constants);
 use Params::Validate;
 
-our $VERSION = '0.01002';
+our $VERSION = '0.01003';
 our $ERRSTR  = '';
 
 =head1 NAME
@@ -87,16 +87,6 @@ This can be one of the following L<Gearman::XS::Client> methods:
 
 =back
 
-=item *
-
-prepare_message
-
-    # encode log message before it's being sent as workload to Gearman
-    prepare_message => sub {
-        my ($message) = @_;
-        return JSON::XS::encode({ message => $message });
-    }
-
 =back
 
 =cut
@@ -104,28 +94,7 @@ prepare_message
 sub new {
     my $package = shift;
 
-    my %options = Params::Validate::validate(
-        @_,
-        {
-            servers => {
-                type     => Params::Validate::ARRAYREF,
-                optional => 0,
-            },
-            worker => {
-                type     => Params::Validate::SCALAR,
-                optional => 0,
-            },
-            method => {
-                type    => Params::Validate::SCALAR,
-                regex   => qr/^(do|do_high|do_low|do_background|do_high_background|do_low_background)$/,
-                default => 'do_background',
-            },
-            prepare_message => {
-                type     => Params::Validate::CODEREF,
-                optional => 1,
-            },
-        }
-    );
+    my %options = $package->_validate(@_);
 
     my $self = bless \%options, $package;
 
@@ -157,13 +126,8 @@ sub log {
 
     my $method  = $self->{method};
     my $worker  = $self->{worker};
-    my $prepare = $self->{prepare_message};
 
     my $workload = $message;
-
-    if ( ref($prepare) eq 'CODE' ) {
-        $workload = $prepare->($message);
-    }
 
     my ( $ret, $job_handle ) = $self->{client}->$method( $worker, $workload );
     if ( $ret != GEARMAN_SUCCESS ) {
@@ -181,6 +145,41 @@ Returns the last error message.
 
 sub errstr { $ERRSTR }
 
+=head2 gearman_client
+
+Returns L<Gearman::XS::Client> instance.
+
+=cut
+
+sub gearman_client {
+    return shift->{client};
+}
+
+=head2 reload
+
+Reload with a new configuration.
+
+=cut
+
+sub reload {
+    my $self = shift;
+
+    my %options = ();
+    eval { %options = $self->_validate(@_) };
+
+    if ($@) {
+        return $self->_raise_error($@);
+    }
+
+    foreach my $key (keys %options) {
+        $self->{$key} = $options{$key};
+    }
+
+    $self->_setup_gearman;
+
+    return 1;
+}
+
 sub _setup_gearman {
     my ($self) = @_;
     my $client = Gearman::XS::Client->new;
@@ -195,6 +194,28 @@ sub _raise_error {
     my $self = shift;
     $ERRSTR = shift;
     return undef;
+}
+
+sub _validate {
+    my $self = shift;
+    return Params::Validate::validate(
+        @_,
+        {
+            servers => {
+                type     => Params::Validate::ARRAYREF,
+                optional => 0,
+            },
+            worker => {
+                type     => Params::Validate::SCALAR,
+                optional => 0,
+            },
+            method => {
+                type    => Params::Validate::SCALAR,
+                regex   => qr/^(do|do_high|do_low|do_background|do_high_background|do_low_background)$/,
+                default => 'do_background',
+            },
+        }
+    );
 }
 
 =head1 AUTHOR

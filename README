@@ -50,14 +50,6 @@ METHODS
         * "do_high_background"
         * "do_low_background"
 
-    *   prepare_message
-
-            # encode log message before it's being sent as workload to Gearman
-            prepare_message => sub {
-                my ($message) = @_;
-                return JSON::XS::encode({ message => $message });
-            }
-
   log
     Takes one argument:
 
@@ -65,6 +57,12 @@ METHODS
 
   errstr
     Returns the last error message.
+
+  gearman_client
+    Returns Gearman::XS::Client instance.
+
+  reload
+    Reload with a new configuration.
 
 AUTHOR
     Johannes Plunien <plu@cpan.org>

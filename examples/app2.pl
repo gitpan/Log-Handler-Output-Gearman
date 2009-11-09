@@ -12,7 +12,6 @@ my $logger  = Log::Handler->new();
 my $gearman = Log::Handler::Output::Gearman->new(
     servers         => ['127.0.0.1'],
     worker          => 'logger',
-    prepare_message => sub { return $json->encode( { message => shift } ) }
 );
 
 my %handler_options = (
